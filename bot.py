@@ -10,7 +10,14 @@ from google.auth.transport.requests import Request
 from dotenv import load_dotenv
 
 # If modifying these scopes, delete the file token.pickle.
+<<<<<<< Updated upstream
 SCOPES = ['https://www.googleapis.com/auth/calendar.readonly']
+=======
+SCOPES = ['https://www.googleapis.com/auth/calendar']
+emmett = 'sob00kp7sf2l7rf2cskulendto@group.calendar.google.com'
+allen = '87aalj3tmll3n7qaq95ib60m0o@group.calendar.google.com'
+sidhu = 'j05ajvtilvu618f16j9msce9gc@group.calendar.google.com'
+>>>>>>> Stashed changes
 
 load_dotenv()
 TOKEN = os.getenv('DISCORD_TOKEN')
@@ -62,8 +69,32 @@ async def on_message(message):
     if message.author == client.user:
         return
     if message.content == '!availablenow':
+<<<<<<< Updated upstream
         await message.channel.send('exec')
     if message.content == '!stop': await client.logout()
 
 
+=======
+        free = await people_now(message)
+        for name in free:
+            await message.channel.send(name)
+    if message.content == '!killBot':
+        await message.channel.send("can't kill me im coded different")
+    if message.content == '!stop': await client.logout()
+
+
+@client.event
+async def people_now(message):
+    output = ['These people are available: ']
+    now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
+    events_result = service.events().list(calendarId=emmett, timeMin=now,
+                                        maxResults=1, singleEvents=True,
+                                        orderBy='startTime').execute()
+    events = events_result.get('items', [])
+
+    if not events:
+        output.append('allen')
+    return output
+
+>>>>>>> Stashed changes
 client.run(TOKEN)
