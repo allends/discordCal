@@ -3,6 +3,7 @@ import os
 import discord
 import datetime
 from datetime import timedelta
+from pytz import timezone
 import pickle
 import os.path
 from googleapiclient.discovery import build
@@ -73,17 +74,24 @@ async def on_message(message):
 @client.event
 async def people_now(message):
     output = ['These people are available: ']
-    now = datetime.datetime.now()
-    before = now - timedelta(minutes=1)
-    after = now + timedelta(minutes=1)
-    before = before.isoformat()
-    after = after.isoformat()
+    from pytz import timezone
 
-    events_result = service.events().list(calendarId=sidhu, timeMin=before, timeMax = after, maxResults=1, singleEvents=True).execute()
-    events = events_result.get('items', [])
+    eastern = timezone('US/Eastern')
+    now = (datetime.datetime.now(eastern)-timedelta(minutes=1)).replace(microsecond=0).isoformat()
+    later = (datetime.datetime.now(eastern)+timedelta(minutes=1)).replace(microsecond=0).isoformat()
 
-    if not events:
+    events_result = service.events().list(calendarId=sidhu , timeMin = now, timeMax = later, maxResults=1).execute()
+    if not events_result.get('items', []):
         output.append('sidhu')
+
+    events_result = service.events().list(calendarId=allen , timeMin = now, timeMax = later, maxResults=1).execute()
+    if not events_result.get('items', []):
+        output.append('allen')
+
+    events_result = service.events().list(calendarId=emmett , timeMin = now, timeMax = later, maxResults=1).execute()
+    if not events_result.get('items', []):
+        output.append('emmett')
+
 
     return output
 
