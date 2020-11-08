@@ -5,6 +5,7 @@ import datetime
 from datetime import timedelta
 from pytz import timezone
 import pickle
+import json
 import os.path
 from googleapiclient.discovery import build
 from google_auth_oauthlib.flow import InstalledAppFlow
@@ -39,6 +40,17 @@ if not creds or not creds.valid:
 
 service = build('calendar', 'v3', credentials=creds)
 
+#build the calendar list
+people = {}
+calendar_list = service.calendarList().list().execute()
+for calendar_list_entry in calendar_list['items']:
+    name = calendar_list_entry['summary']
+    if name != 'discal2020@gmail.com' and name != 'Holidays in United States' and name != 'Birthdays':
+        people[name] = calendar_list_entry['id']
+
+
+print(people)
+
 # Call the Calendar API
 now = datetime.datetime.utcnow().isoformat() + 'Z' # 'Z' indicates UTC time
 print('Getting the upcoming 10 events')
@@ -62,37 +74,62 @@ async def on_ready():
 async def on_message(message):
     if message.author == client.user:
         return
-    if message.content == '!availablenow':
+    
+    if "!freein" in message.content:
+        time = int(message.content.split(" ")[1])
+        free = await people_later(message, time)
+        await message.channel.send(free)
+
+    if message.content == '!freenow':
         free = await people_now(message)
-        for name in free:
-            await message.channel.send(name)
+        await message.channel.send(free)
     if message.content == '!killBot':
         await message.channel.send("can't kill me im coded different")
+
+    if message.content == '!annoyEshaan':
+        for i in range(30):
+            await message.channel.send('lol')
     if message.content == '!stop': await client.logout()
 
 
 @client.event
 async def people_now(message):
-    output = ['These people are available: ']
+    output = "These people are available: "
     from pytz import timezone
 
     eastern = timezone('US/Eastern')
     now = (datetime.datetime.now(eastern)-timedelta(minutes=1)).replace(microsecond=0).isoformat()
     later = (datetime.datetime.now(eastern)+timedelta(minutes=1)).replace(microsecond=0).isoformat()
 
-    events_result = service.events().list(calendarId=sidhu , timeMin = now, timeMax = later, maxResults=1).execute()
-    if not events_result.get('items', []):
-        output.append('sidhu')
+    for key in people:
+        events_result = service.events().list(calendarId=people.get(key) , timeMin = now, timeMax = later, maxResults=1).execute()
+        if not events_result.get('items', []):
+            output += key + ", "
 
-    events_result = service.events().list(calendarId=allen , timeMin = now, timeMax = later, maxResults=1).execute()
-    if not events_result.get('items', []):
-        output.append('allen')
+    if output == "These people are available: ":
+        output = "No one is free..."
 
-    events_result = service.events().list(calendarId=emmett , timeMin = now, timeMax = later, maxResults=1).execute()
-    if not events_result.get('items', []):
-        output.append('emmett')
+    return output[:-2]
 
+@client.event
+async def people_later(message, mins):
+    output = "These people are available: "
+    from pytz import timezone
 
-    return output
+    eastern = timezone('US/Eastern')
+    deltaNow = mins - 1;
+    deltaLater = mins + 1;
+    now = (datetime.datetime.now(eastern)+timedelta(minutes=deltaNow)).replace(microsecond=0).isoformat()
+    later = (datetime.datetime.now(eastern)+timedelta(minutes=deltaLater)).replace(microsecond=0).isoformat()
+
+    for key in people:
+        events_result = service.events().list(calendarId=people.get(key) , timeMin = now, timeMax = later, maxResults=1).execute()
+        if not events_result.get('items', []):
+            output += key + ", "
+
+    if output == "These people will be available: ":
+        output = "No one is free..."
+
+    return output[:-2]
 
 client.run(TOKEN)
