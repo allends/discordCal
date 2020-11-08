@@ -80,6 +80,11 @@ async def on_message(message):
         free = await people_later(message, time)
         await message.channel.send(free)
 
+    if "!freefor" in message.content:
+        time = int(message.content.split(" ")[1])
+        free = await people_later(message, time)
+        await message.channel.send(free)
+
     if message.content == '!freenow':
         free = await people_now(message)
         await message.channel.send(free)
@@ -120,6 +125,26 @@ async def people_later(message, mins):
     deltaNow = mins - 1;
     deltaLater = mins + 1;
     now = (datetime.datetime.now(eastern)+timedelta(minutes=deltaNow)).replace(microsecond=0).isoformat()
+    later = (datetime.datetime.now(eastern)+timedelta(minutes=deltaLater)).replace(microsecond=0).isoformat()
+
+    for key in people:
+        events_result = service.events().list(calendarId=people.get(key) , timeMin = now, timeMax = later, maxResults=1).execute()
+        if not events_result.get('items', []):
+            output += key + ", "
+
+    if output == "These people will be available: ":
+        output = "No one is free..."
+
+    return output[:-2]
+
+@client.event
+async def people_for(message, mins):
+    output = "These people are available: "
+    from pytz import timezone
+
+    eastern = timezone('US/Eastern')
+    deltaLater = mins + 1;
+    now = (datetime.datetime.now(eastern)-timedelta(minutes=1)).replace(microsecond=0).isoformat()
     later = (datetime.datetime.now(eastern)+timedelta(minutes=deltaLater)).replace(microsecond=0).isoformat()
 
     for key in people:
